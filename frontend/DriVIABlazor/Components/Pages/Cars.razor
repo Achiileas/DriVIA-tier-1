@@ -1,7 +1,73 @@
 @page "/cars"
+@rendermode InteractiveServer
 
-<PageTitle>Browse Cars - DriVIA</PageTitle>
+@using DriveVIA.Client.Models
+@using System.Net.Http.Json
+@inject IHttpClientFactory HttpClientFactory
 
-<h1>Browse Cars</h1>
+<h3>Browse Cars</h3>
 
-<p>Available rental cars will be displayed here soon.</p>
+<p>Available cars at DriVIA Car Rental</p>
+
+@if (loading)
+{
+    <p>Loading cars...</p>
+}
+else if (errorMessage != null)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else if (cars.Count == 0)
+{
+    <p>No cars available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Model</th>
+            <th>Category</th>
+            <th>Location</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var car in cars)
+        {
+            <tr>
+                <td>@car.Id</td>
+                <td>@car.Model</td>
+                <td>@car.Category</td>
+                <td>@car.Location</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Car> cars = new();
+    private bool loading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+
+            cars = await client.GetFromJsonAsync<List<Car>>(
+                "http://localhost:8080/api/cars"
+            ) ?? new List<Car>();
+        }
+        catch (Exception)
+        {
+            errorMessage = "Could not load cars from the backend.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}
