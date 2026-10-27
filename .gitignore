@@ -1,0 +1,13 @@
+﻿# Blazor / .NET
+**/bin/
+**/obj/
+**/.vs/
+**/TestResults/
+
+# Rider
+.idea/
+**/.idea/
+
+# Local secrets
+**/appsettings.Local.json
+**/appsettings.*.local.json
