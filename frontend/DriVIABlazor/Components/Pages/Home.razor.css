@@ -1,0 +1,146 @@
+﻿
+/* Main background of the Home page */
+.home-page {
+  background-color: #142b3b;
+  color: white;
+  min-height: 100vh;
+  padding: 32px;
+  font-family: Arial, sans-serif;
+}
+
+/* Welcome section */
+.hero-section {
+  max-width: 1200px;
+  margin: 0 auto 35px;
+}
+
+/* BMW image */
+.hero-image {
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  object-position: center 45%;
+  border-radius: 16px;
+}
+
+/* Welcome text below the image */
+.hero-content {
+  padding-top: 24px;
+}
+
+.hero-content h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.hero-content p {
+  color: #cbd7df;
+  font-size: 17px;
+}
+
+/* Rental search section */
+.search-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: white;
+  color: #172b3a;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.search-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.search-description {
+  color: #687985;
+  margin-bottom: 24px;
+}
+
+/* Layout for the input fields */
+.search-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+/* Styling each input field */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.form-field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d5dfe6;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: white;
+  color: #172b3a;
+}
+
+/* Search button */
+.search-button {
+  grid-column: 1 / -1;
+  background-color: #173b60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background-color: #24547e;
+}
+
+/* Validation error message */
+.error-message {
+  color: #c62828;
+  margin-top: 16px;
+}
+
+/* Adjusting the layout for smaller screens */
+@media (max-width: 1000px) {
+  .search-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile layout */
+@media (max-width: 600px) {
+  .home-page {
+    padding: 16px;
+  }
+
+  .hero-image {
+    height: 240px;
+  }
+
+  .hero-content h1 {
+    font-size: 28px;
+  }
+
+  .search-section {
+    padding: 20px;
+  }
+
+  .search-form {
+    grid-template-columns: 1fr;
+  }
+}
