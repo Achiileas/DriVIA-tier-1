@@ -1,14 +1,137 @@
 ﻿
 @page "/"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
 
 <PageTitle>DriVIA - Car Rental</PageTitle>
 
-<h1>Welcome to DriVIA!</h1>
+<div class="home-page">
 
-<p>Find your perfect rental car.</p>
+    @* Main welcome section with our BMW image *@
+    <section class="hero-section">
 
-<h2>Our Cars</h2>
+        <img src="/images/BMW-driving.jpg"
+             alt="Blue BMW driving through the mountains"
+             class="hero-image" />
 
-<p>Browse our selection of available vehicles.</p>
+        <div class="hero-content">
+            <h1>Your journey starts here.</h1>
+            <p>Find the perfect car for your next adventure.</p>
+        </div>
 
+    </section>
 
+    @* Search form for selecting the rental location and period *@
+    <section class="search-section">
+
+        <h2>Find your rental car</h2>
+        <p class="search-description">
+            Choose your location and rental dates to get started.
+        </p>
+
+        <div class="search-form">
+
+            <div class="form-field location-field">
+                <label for="location">Pick-up location</label>
+                <input id="location"
+                       type="text"
+                       placeholder="Enter a city"
+                       @bind="location" />
+            </div>
+
+            <div class="form-field">
+                <label for="pickupDate">Pick-up date</label>
+                <input id="pickupDate"
+                       type="date"
+                       @bind="pickupDate" />
+            </div>
+
+            <div class="form-field">
+                <label for="pickupTime">Pick-up time</label>
+                <input id="pickupTime"
+                       type="time"
+                       @bind="pickupTime" />
+            </div>
+
+            <div class="form-field">
+                <label for="returnDate">Return date</label>
+                <input id="returnDate"
+                       type="date"
+                       @bind="returnDate" />
+            </div>
+
+            <div class="form-field">
+                <label for="returnTime">Return time</label>
+                <input id="returnTime"
+                       type="time"
+                       @bind="returnTime" />
+            </div>
+
+            @* Calling the search method when the customer clicks the button *@
+            <button class="search-button" @onclick="SearchCars">
+                Search available cars
+            </button>
+
+        </div>
+
+        @* Showing an error message if the entered data is invalid *@
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <p class="error-message">@errorMessage</p>
+        }
+
+    </section>
+
+</div>
+
+@code {
+    // Variables for storing the rental information entered by the customer
+    private string location = "";
+
+    private DateTime pickupDate = DateTime.Today;
+    private TimeOnly pickupTime = new(10, 0);
+
+    private DateTime returnDate = DateTime.Today.AddDays(1);
+    private TimeOnly returnTime = new(10, 0);
+
+    private string errorMessage = "";
+
+    private void SearchCars()
+    {
+        // Clearing the previous error message
+        errorMessage = "";
+
+        // Checking if the customer entered a pick-up location
+        if (string.IsNullOrWhiteSpace(location))
+        {
+            errorMessage = "Please enter a pick-up location.";
+            return;
+        }
+
+        // Combining the selected dates and times into DateTime values
+        DateTime pickup = pickupDate.Date.Add(pickupTime.ToTimeSpan());
+        DateTime dropoff = returnDate.Date.Add(returnTime.ToTimeSpan());
+
+        // Checking that the pick-up is in the future
+        if (pickup <= DateTime.Now)
+        {
+            errorMessage = "Pick-up must be in the future.";
+            return;
+        }
+
+        // Checking that the return is later than the pick-up
+        if (dropoff <= pickup)
+        {
+            errorMessage = "Return must be after pick-up.";
+            return;
+        }
+
+        // Passing the rental search information to the Cars page
+        string url = $"/cars?location={Uri.EscapeDataString(location)}" +
+                     $"&pickup={pickup:yyyy-MM-ddTHH:mm}" +
+                     $"&returnDate={dropoff:yyyy-MM-ddTHH:mm}";
+
+        // Redirecting the customer to the catalogue
+        Navigation.NavigateTo(url);
+    }
+}
