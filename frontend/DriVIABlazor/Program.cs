@@ -1,4 +1,5 @@
 using DriVIABlazor.Components;
+using DriVIABlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient();
+
+
+// Registering the API service for communication with Java Tier 2
+builder.Services.AddHttpClient<CarApiService>(client =>
+{
+    // Reading the backend URL from appsettings.json
+    string baseUrl = builder.Configuration["JavaApi:BaseUrl"]
+                     ?? throw new InvalidOperationException("Java API URL is missing.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
 
 var app = builder.Build();
 
