@@ -1,12 +1,73 @@
+@using DriVIABlazor.Models
 @page "/cars"
 @rendermode InteractiveServer
 
 @using DriVIABlazor.Models
-@inject IHttpClientFactory HttpClientFactory
+@using DriVIABlazor.Services
+@inject CarApiService CarApiService
 
 <h3>Browse Cars</h3>
 
-<p>Available cars at DriVIA Car Rental</p>
+<p>Search for cars at DriVIA Car Rental</p>
+
+<div class="mb-3">
+    <label class="form-label">Model</label>
+    <input class="form-control"
+           placeholder="Enter car model"
+           @bind="searchModel" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Category</label>
+    <select class="form-control" @bind="selectedCategory">
+        <option value="">All Categories</option>
+        @foreach (var category in cars.Select(c => c.Category).Distinct())
+        {
+            <option value="@category">@category</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Maximum Price (DKK/day)</label>
+    <input type="number"
+           class="form-control"
+           min="0"
+           placeholder="Enter maximum price"
+           @bind="maximumPrice" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Location</label>
+    <select class="form-control" @bind="selectedLocation">
+        <option value="">All Locations</option>
+        @foreach (var location in cars.Select(c => c.Location).Distinct())
+        {
+            <option value="@location">@location</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Gearbox</label>
+    <select class="form-control" @bind="selectedGearbox">
+        <option value="">All Gearboxes</option>
+        @foreach (var gearbox in cars.Select(c => c.Gearbox).Distinct())
+        {
+            <option value="@gearbox">@gearbox</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="SearchCars">
+        Search
+    </button>
+
+    <button class="btn btn-secondary" @onclick="ClearSearch">
+        Clear
+    </button>
+</div>
 
 @if (loading)
 {
@@ -16,37 +77,49 @@ else if (errorMessage != null)
 {
     <p class="text-danger">@errorMessage</p>
 }
-else if (cars.Count == 0)
+else if (filteredCars.Count == 0)
 {
-    <p>No cars available.</p>
+    <p>No cars found.</p>
 }
 else
 {
     <table class="table">
         <thead>
-        <tr>
-            <th>ID</th>
-            <th>Model</th>
-            <th>Category</th>
-            <th>Location</th>
-        </tr>
+            <tr>
+                <th>ID</th>
+                <th>Model</th>
+                <th>Category</th>
+                <th>Price (DKK/day)</th>
+                <th>Location</th>
+                <th>Gearbox</th>
+            </tr>
         </thead>
         <tbody>
-        @foreach (var car in cars)
-        {
-            <tr>
-                <td>@car.Id</td>
-                <td>@car.Model</td>
-                <td>@car.Category</td>
-                <td>@car.Location</td>
-            </tr>
-        }
+            @foreach (var car in filteredCars)
+            {
+                <tr>
+                    <td>@car.Id</td>
+                    <td>@car.Model</td>
+                    <td>@car.Category</td>
+                    <td>@car.Price</td>
+                    <td>@car.Location</td>
+                    <td>@car.Gearbox</td>
+                </tr>
+            }
         </tbody>
     </table>
 }
 
 @code {
     private List<Car> cars = new();
+    private List<Car> filteredCars = new();
+
+    private string searchModel = "";
+    private string selectedCategory = "";
+    private decimal? maximumPrice;
+    private string selectedLocation = "";
+    private string selectedGearbox = "";
+
     private bool loading = true;
     private string? errorMessage;
 
@@ -54,11 +127,8 @@ else
     {
         try
         {
-            var client = HttpClientFactory.CreateClient();
-
-            cars = await client.GetFromJsonAsync<List<Car>>(
-                "http://localhost:8080/api/cars"
-            ) ?? new List<Car>();
+            cars = await CarApiService.GetAllCarsAsync();
+            filteredCars = cars.ToList();
         }
         catch (Exception)
         {
@@ -68,5 +138,37 @@ else
         {
             loading = false;
         }
+    }
+
+    private void SearchCars()
+    {
+        filteredCars = cars.Where(car =>
+            car.Model.Contains(
+                searchModel,
+                StringComparison.OrdinalIgnoreCase) &&
+
+            (selectedCategory == "" ||
+             car.Category == selectedCategory) &&
+
+            (!maximumPrice.HasValue ||
+             car.Price <= maximumPrice.Value) &&
+
+            (selectedLocation == "" ||
+             car.Location == selectedLocation) &&
+
+            (selectedGearbox == "" ||
+             car.Gearbox == selectedGearbox)
+        ).ToList();
+    }
+
+    private void ClearSearch()
+    {
+        searchModel = "";
+        selectedCategory = "";
+        maximumPrice = null;
+        selectedLocation = "";
+        selectedGearbox = "";
+
+        filteredCars = cars.ToList();
     }
 }
