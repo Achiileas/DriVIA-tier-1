@@ -1,11 +1,16 @@
-﻿namespace DriVIABlazor.Models;
+namespace DriveVIA.Client.Models;
 
 public class Car
 {
-//Hi Anushka, here I changed unique identifier of the car,
-//matching the Java backend
-    public long Id { get; set; }
+    public  long Id { get; set; }
+
     public string Model { get; set; } = "";
+
     public string Category { get; set; } = "";
+
+    public decimal Price { get; set; }
+
     public string Location { get; set; } = "";
+
+    public string Gearbox { get; set; } = "";
 }
