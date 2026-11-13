@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using DriVIABlazor.Components;
 using DriVIABlazor.Services;
 
@@ -15,6 +16,24 @@ builder.Services.AddHttpClient<CarApiService>(client =>
 
     client.BaseAddress = new Uri(baseUrl);
 });
+
+// Register LoginService to communicate with the Tier 2 authentication API.
+builder.Services.AddHttpClient<LoginService>(client =>
+{
+    string baseUrl = builder.Configuration["JavaApi:BaseUrl"]
+                     ?? throw new InvalidOperationException("Java API URL is missing.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
+// Register authentication state management for login and logout.
+builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddScoped<SimpleAuthService>();
+
+builder.Services.AddScoped<AuthenticationStateProvider>(provider =>
+    provider.GetRequiredService<SimpleAuthService>());
+
 
 var app = builder.Build();
 
