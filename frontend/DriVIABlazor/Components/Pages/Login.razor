@@ -1,0 +1,82 @@
+
+@page "/login"
+@rendermode InteractiveServer
+@using DriVIABlazor.Models
+@inject DriVIABlazor.Services.LoginService LoginService
+@inject DriVIABlazor.Services.SimpleAuthService SimpleAuthService
+
+<h3>Login</h3>
+
+<EditForm Model="@loginRequest"
+          OnValidSubmit="@HandleLogin"
+          FormName="LoginForm">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>Username</label>
+        <InputText class="form-control"
+                   @bind-Value="loginRequest.Username" />
+    </div>
+
+    <div class="mb-3">
+        <label>Password</label>
+        <InputText type="password"
+                   class="form-control"
+                   @bind-Value="loginRequest.Password" />
+    </div>
+
+    <button type="submit"
+            class="btn btn-primary"
+            disabled="@isLoading">
+        @(isLoading ? "Logging in..." : "Login")
+    </button>
+</EditForm>
+
+<p>@message</p>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private string message = "";
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        message = "";
+
+        try
+        {
+            // Send credentials to Tier 2 API
+            var response = await LoginService.LoginAsync(loginRequest);
+
+            if (response != null &&
+                !string.IsNullOrWhiteSpace(response.Name) &&
+                !string.IsNullOrWhiteSpace(response.Role))
+            {
+                // Use backend-verified user information
+                SimpleAuthService.Login(
+                    response.Name,
+                    response.Role
+                );
+
+                message = "Login successful!";
+            }
+            else
+            {
+                message = "Invalid username or password.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            message = "Cannot connect to the server.";
+        }
+        catch (Exception)
+        {
+            message = "Login failed. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
