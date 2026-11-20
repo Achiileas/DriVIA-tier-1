@@ -7,21 +7,40 @@ public class CarApiService
 {
     private readonly HttpClient httpClient;
 
-    // Constructor receives HttpClient through dependency injection
     public CarApiService(HttpClient httpClient)
     {
         this.httpClient = httpClient;
     }
 
-    // Retrieves all cars from the Java REST API
     public async Task<List<Car>> GetAllCarsAsync()
     {
-        // Sends GET request to the cars endpoint
-        List<Car>? cars = await httpClient.GetFromJsonAsync<List<Car>>(
-            "api/cars"
-        );
+        List<Car>? cars =
+            await httpClient.GetFromJsonAsync<List<Car>>("api/cars");
 
-        // Returns an empty list if the response is null
         return cars ?? new List<Car>();
+    }
+    public async Task<bool> AddCarAsync(Car car)
+    {
+        HttpResponseMessage response =
+            await httpClient.PostAsJsonAsync("api/cars", car);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> UpdateCarAsync(Car car)
+    {
+        HttpResponseMessage response =
+            await httpClient.PutAsJsonAsync(
+                $"api/cars/{car.Id}", car);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<bool> DeleteCarAsync(long carId)
+    {
+        HttpResponseMessage response =
+            await httpClient.DeleteAsync($"api/cars/{carId}");
+
+        return response.IsSuccessStatusCode;
     }
 }

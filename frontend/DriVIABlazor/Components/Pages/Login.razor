@@ -1,15 +1,19 @@
 
 @page "/login"
 @rendermode InteractiveServer
+
 @using DriVIABlazor.Models
+
 @inject DriVIABlazor.Services.LoginService LoginService
 @inject DriVIABlazor.Services.SimpleAuthService SimpleAuthService
+@inject NavigationManager Navigation
 
 <h3>Login</h3>
 
 <EditForm Model="@loginRequest"
           OnValidSubmit="@HandleLogin"
           FormName="LoginForm">
+
     <DataAnnotationsValidator />
 
     <div class="mb-3">
@@ -30,6 +34,7 @@
             disabled="@isLoading">
         @(isLoading ? "Logging in..." : "Login")
     </button>
+
 </EditForm>
 
 <p>@message</p>
@@ -46,24 +51,29 @@
 
         try
         {
-            // Send credentials to Tier 2 API
             var response = await LoginService.LoginAsync(loginRequest);
 
             if (response != null &&
+                response.UserId > 0 &&
                 !string.IsNullOrWhiteSpace(response.Name) &&
                 !string.IsNullOrWhiteSpace(response.Role))
             {
-                // Use backend-verified user information
                 SimpleAuthService.Login(
                     response.Name,
-                    response.Role
+                    response.Role,
+                    response.UserId
                 );
 
                 message = "Login successful!";
+
+                if (response.Role == "CUSTOMER")
+                {
+                    Navigation.NavigateTo("/my-reservations");
+                }
             }
             else
             {
-                message = "Invalid username or password.";
+                message = "Invalid login information.";
             }
         }
         catch (HttpRequestException)

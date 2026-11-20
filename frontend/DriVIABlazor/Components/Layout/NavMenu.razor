@@ -8,6 +8,7 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
@@ -17,6 +18,13 @@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="cars">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Browse Cars
+            </NavLink>
+        </div>
+
+        @* Navigation link to the My Reservations page. *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="my-reservations">
+                <span class="bi bi-calendar-check" aria-hidden="true"></span> My Reservations
             </NavLink>
         </div>
 
@@ -33,5 +41,6 @@
                 <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
             </NavLink>
         </div>
+
     </nav>
 </div>

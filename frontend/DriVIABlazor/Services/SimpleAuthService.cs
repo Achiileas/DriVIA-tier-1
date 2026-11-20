@@ -12,7 +12,6 @@ public class SimpleAuthService : AuthenticationStateProvider
         return Task.FromResult(new AuthenticationState(currentUser));
     }
 
-    // Login with username and role
     public void Login(string username, string role)
     {
         var claims = new List<Claim>
@@ -27,7 +26,21 @@ public class SimpleAuthService : AuthenticationStateProvider
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
-    
+    public void Login(string username, string role, int customerId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.Role, role),
+            new Claim(ClaimTypes.NameIdentifier, customerId.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, "SimpleAuth");
+        currentUser = new ClaimsPrincipal(identity);
+
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
     public void Login(string username)
     {
         Login(username, "CUSTOMER");
