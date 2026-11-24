@@ -15,8 +15,8 @@ public class CarApiService
     public async Task<List<Car>> GetAllCarsAsync()
     {
         List<Car>? cars =
-            await httpClient.GetFromJsonAsync<List<Car>>("api/cars");
-
+            await httpClient.GetFromJsonAsync<List<Car>>("api/vehicles");
+        
         return cars ?? new List<Car>();
     }
     public async Task<bool> AddCarAsync(Car car)
@@ -43,4 +43,28 @@ public class CarApiService
 
         return response.IsSuccessStatusCode;
     }
+    
+    public async Task<Car?> GetCarByIdAsync(long id)
+    {
+        return await httpClient.GetFromJsonAsync<Car>(
+            $"api/vehicles/{id}");
+    }
+    
+    public async Task<List<Car>> GetAvailableCarsAsync(
+        int locationId,
+        DateOnly pickupDate,
+        DateOnly returnDate)
+    {
+        string url = $"api/vehicles/available" +
+                     $"?locationId={locationId}" +
+                     $"&pickupDate={pickupDate:yyyy-MM-dd}" +
+                     $"&returnDate={returnDate:yyyy-MM-dd}";
+
+        List<Car>? cars =
+            await httpClient.GetFromJsonAsync<List<Car>>(url);
+
+        return cars ?? new List<Car>();
+    }
+    
 }
+

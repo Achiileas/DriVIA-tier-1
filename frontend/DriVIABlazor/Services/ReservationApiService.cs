@@ -1,4 +1,6 @@
+using System.Net.Http.Json;
 using DriVIABlazor.Models;
+
 
 namespace DriVIABlazor.Services;
 
@@ -16,4 +18,15 @@ public class ReservationApiService
         await Task.CompletedTask;
         return new List<Reservation>();
     }
+    
+    public async Task<bool> CreateReservationAsync(
+        ReservationCreateApiRequest request)
+    {
+        HttpResponseMessage response =
+            await httpClient.PostAsJsonAsync(
+                "api/customer/reservations", request);
+
+        return response.IsSuccessStatusCode;
+    }
+
 }

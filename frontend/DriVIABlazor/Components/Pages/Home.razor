@@ -1,15 +1,16 @@
-﻿
-@page "/"
+﻿@page "/"
 @rendermode InteractiveServer
+
+@using DriVIABlazor.Models
+@using DriVIABlazor.Services
 @inject NavigationManager Navigation
+@inject LocationApiService LocationApiService
 
 <PageTitle>DriVIA - Car Rental</PageTitle>
 
 <div class="home-page">
 
-    @* Main welcome section with our BMW image *@
     <section class="hero-section">
-
         <img src="/images/BMW-driving.jpg"
              alt="Blue BMW driving through the mountains"
              class="hero-image" />
@@ -18,13 +19,12 @@
             <h1>Your journey starts here.</h1>
             <p>Find the perfect car for your next adventure.</p>
         </div>
-
     </section>
 
-    @* Search form for selecting the rental location and period *@
     <section class="search-section">
 
         <h2>Find your rental car</h2>
+
         <p class="search-description">
             Choose your location and rental dates to get started.
         </p>
@@ -33,16 +33,26 @@
 
             <div class="form-field location-field">
                 <label for="location">Pick-up location</label>
-                <input id="location"
-                       type="text"
-                       placeholder="Enter a city"
-                       @bind="location" />
+
+                <select id="location"
+                        @bind="location"
+                        disabled="@loadingLocations">
+                    <option value="">Choose a location</option>
+
+                    @foreach (var item in locations)
+                    {
+                        <option value="@item.Name">
+                            @item.Name
+                        </option>
+                    }
+                </select>
             </div>
 
             <div class="form-field">
                 <label for="pickupDate">Pick-up date</label>
                 <input id="pickupDate"
                        type="date"
+                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
                        @bind="pickupDate" />
             </div>
 
@@ -57,6 +67,7 @@
                 <label for="returnDate">Return date</label>
                 <input id="returnDate"
                        type="date"
+                       min="@pickupDate.ToString("yyyy-MM-dd")"
                        @bind="returnDate" />
             </div>
 
@@ -67,14 +78,14 @@
                        @bind="returnTime" />
             </div>
 
-            @* Calling the search method when the customer clicks the button *@
-            <button class="search-button" @onclick="SearchCars">
+            <button class="search-button"
+                    @onclick="SearchCars"
+                    disabled="@loadingLocations">
                 Search available cars
             </button>
 
         </div>
 
-        @* Showing an error message if the entered data is invalid *@
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <p class="error-message">@errorMessage</p>
@@ -85,7 +96,8 @@
 </div>
 
 @code {
-    // Variables for storing the rental information entered by the customer
+    private List<Location> locations = new();
+
     private string location = "";
 
     private DateTime pickupDate = DateTime.Today;
@@ -95,43 +107,51 @@
     private TimeOnly returnTime = new(10, 0);
 
     private string errorMessage = "";
+    private bool loadingLocations = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            locations = await LocationApiService.GetAllLocationsAsync();
+        }
+        catch (Exception)
+        {
+            errorMessage = "Could not load rental locations.";
+        }
+        finally
+        {
+            loadingLocations = false;
+        }
+    }
 
     private void SearchCars()
     {
-        // Clearing the previous error message
         errorMessage = "";
 
-        // Checking if the customer entered a pick-up location
         if (string.IsNullOrWhiteSpace(location))
         {
-            errorMessage = "Please enter a pick-up location.";
+            errorMessage = "Please select a pick-up location.";
             return;
         }
 
-        // Combining the selected dates and times into DateTime values
-        DateTime pickup = pickupDate.Date.Add(pickupTime.ToTimeSpan());
-        DateTime dropoff = returnDate.Date.Add(returnTime.ToTimeSpan());
+        DateTime pickup =
+            pickupDate.Date.Add(pickupTime.ToTimeSpan());
 
-        // Checking that the pick-up is in the future
-        if (pickup <= DateTime.Now)
+        DateTime dropoff =
+            returnDate.Date.Add(returnTime.ToTimeSpan());
+
+        if (pickup <= DateTime.Now ||
+            dropoff <= pickup)
         {
-            errorMessage = "Pick-up must be in the future.";
+            errorMessage = "Invalid selected date.";
             return;
         }
 
-        // Checking that the return is later than the pick-up
-        if (dropoff <= pickup)
-        {
-            errorMessage = "Return must be after pick-up.";
-            return;
-        }
-
-        // Passing the rental search information to the Cars page
         string url = $"/cars?location={Uri.EscapeDataString(location)}" +
                      $"&pickup={pickup:yyyy-MM-ddTHH:mm}" +
                      $"&returnDate={dropoff:yyyy-MM-ddTHH:mm}";
 
-        // Redirecting the customer to the catalogue
         Navigation.NavigateTo(url);
     }
 }

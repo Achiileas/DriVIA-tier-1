@@ -1,0 +1,169 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "CUSTOMER")]
+@page "/book-car/{VehicleId:long}"
+@rendermode InteractiveServer
+
+@using DriVIABlazor.Models
+@using DriVIABlazor.Services
+@inject CarApiService CarApiService
+
+<PageTitle>Book a Car - DriVIA</PageTitle>
+
+<h3>Book a Car</h3>
+
+@if (loading)
+{
+    <p>Loading vehicle details...</p>
+}
+else if (errorMessage != "")
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else if (car != null)
+{
+    <h4>@car.Model</h4>
+
+    <p><strong>Category:</strong> @car.Category</p>
+    <p><strong>Gearbox:</strong> @car.Gearbox</p>
+    <p><strong>Location:</strong> @car.LocationName</p>
+    <p><strong>Price per day:</strong> @car.PricePerDay DKK</p>
+
+    <hr />
+
+    <h4>Reservation Details</h4>
+
+    <div class="mb-3">
+        <label>Pickup Date and Time</label>
+        <input type="datetime-local"
+               class="form-control"
+               min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
+               @bind="reservation.PickupDate" 
+               @bind:after="ResetEstimate"/>
+    </div>
+
+    <div class="mb-3">
+        <label>Return Date and Time</label>
+        <input type="datetime-local"
+               class="form-control"
+               min="@reservation.PickupDate.ToString("yyyy-MM-ddTHH:mm")"
+               @bind="reservation.ReturnDate" 
+               @bind:after="ResetEstimate" />
+    </div>
+
+    @if (estimatedPrice > 0)
+    {
+        <div class="alert alert-info">
+            <h5>Estimated Rental Price</h5>
+
+            <p>Price per day: @car.PricePerDay DKK</p>
+            <p>Rental days: @rentalDays</p>
+            <p><strong>Total: @estimatedPrice DKK</strong></p>
+        </div>
+    }
+
+    <button class="btn btn-primary"
+            @onclick="HandleBooking">
+        Continue
+    </button>
+
+    <p class="mt-3">@message</p>
+}
+
+@code {
+    [Parameter]
+    public long VehicleId { get; set; }
+    
+    [SupplyParameterFromQuery(Name = "pickup")]
+    public DateTime? SearchPickup { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnDate")]
+    public DateTime? SearchReturn { get; set; }
+
+
+    private Car? car;
+    private CreateReservationRequest reservation = new();
+
+    private bool loading = true;
+    private string errorMessage = "";
+    private string message = "";
+
+    private int rentalDays;
+    private decimal estimatedPrice;
+    
+    
+    private void ResetEstimate()
+    {
+        estimatedPrice = 0;
+        rentalDays = 0;
+        message = "";
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        reservation.VehicleId = VehicleId;
+        
+        estimatedPrice = 0;
+        rentalDays = 0;
+        message = "";
+        
+        reservation.PickupDate = SearchPickup ?? default;
+        reservation.ReturnDate = SearchReturn ?? default;
+
+        loading = true;
+        errorMessage = "";
+
+        try
+        {
+            car = await CarApiService.GetCarByIdAsync(VehicleId);
+
+            if (car == null)
+            {
+                errorMessage = "Vehicle not found.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Could not load vehicle details.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void HandleBooking()
+    {
+        message = "";
+        estimatedPrice = 0;
+        rentalDays = 0;
+
+        if (reservation.PickupDate == default ||
+            reservation.ReturnDate == default)
+        {
+            message = "Please select pickup and return dates.";
+            return;
+        }
+
+        if (reservation.PickupDate <= DateTime.Now ||
+            reservation.ReturnDate <= reservation.PickupDate)
+        {
+            message = "Invalid selected date.";
+            return;
+        }
+
+        if (car == null)
+        {
+            message = "Vehicle information is unavailable.";
+            return;
+        }
+
+        TimeSpan rentalPeriod =
+            reservation.ReturnDate - reservation.PickupDate;
+
+        rentalDays = (int)Math.Ceiling(rentalPeriod.TotalDays);
+
+        estimatedPrice = rentalDays * car.PricePerDay;
+
+        message = "Reservation details validated. Booking is not connected yet.";
+    }
+}
