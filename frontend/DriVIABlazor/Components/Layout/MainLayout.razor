@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="page">
     <div class="sidebar">
@@ -7,7 +8,33 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <AuthorizeView>
+                <Authorized Context="authState">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            @authState.User.Identity?.Name
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="logout">
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </Authorized>
+
+                <NotAuthorized>
+                    <a href="login" class="me-3">Login</a>
+                    <a href="register" class="btn btn-primary">
+                        Register
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
