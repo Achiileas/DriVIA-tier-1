@@ -1,0 +1,331 @@
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "CUSTOMER")]
+
+@page "/my-reservations"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using DriVIABlazor.Models
+@using DriVIABlazor.Services
+
+@inject SimpleAuthService AuthService
+
+<PageTitle>My Reservations - DriVIA</PageTitle>
+
+<div class="my-reservations-page">
+
+    <div class="page-header">
+        <h2>My Reservations</h2>
+        <p>View and manage your bookings with DriVIA Car Rental.</p>
+    </div>
+
+    @if (loading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Checking authentication...</p>
+        </div>
+    }
+    else if (!isCustomer)
+    {
+        <div class="access-card">
+            <div class="access-icon">🔒</div>
+            <h4>Customer Login Required</h4>
+            <p>
+                Please log in as a customer to view
+                and manage your reservations.
+            </p>
+            <a href="/login" class="login-button">
+                Go to Login
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="reservations-card">
+
+            <div class="reservations-header">
+                <div>
+                    <h4>Your Reservations</h4>
+                    <p>Keep track of your car rental bookings.</p>
+                </div>
+
+                <a href="/cars" class="browse-button">
+                    Browse Cars
+                </a>
+            </div>
+
+            @if (reservations.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">🚗</div>
+                    <h5>Reservation Information Unavailable</h5>
+                    <p>
+                        Reservation data is not available yet.
+                        The reservation API still needs to be connected.
+                    </p>
+                    <a href="/cars" class="browse-button">
+                        Browse Cars
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table reservation-table">
+                        <thead>
+                            <tr>
+                                <th>Reservation ID</th>
+                                <th>Vehicle</th>
+                                <th>Location</th>
+                                <th>Pickup Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                                <th>Total Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (Reservation reservation in reservations)
+                            {
+                                <tr>
+                                    <td>@reservation.Id</td>
+                                    <td>@reservation.VehicleModel</td>
+                                    <td>@reservation.LocationName</td>
+                                    <td>@reservation.PickupDate.ToString("dd MMM yyyy")</td>
+                                    <td>@reservation.ReturnDate.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <span class="status-badge">
+                                            @reservation.Status
+                                        </span>
+                                    </td>
+                                    <td>@reservation.TotalPrice DKK</td>
+                                    <td>
+                                        @if (CanManage(reservation))
+                                        {
+                                            <div class="action-buttons">
+                                                <button class="edit-button"
+                                                        @onclick="() => OpenEditForm(reservation)">
+                                                    Edit
+                                                </button>
+
+                                                <button class="cancel-button"
+                                                        @onclick="() => OpenCancelConfirmation(reservation)">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (editingReservation != null)
+                {
+                    <div class="edit-reservation-form">
+
+                        <h4>Edit Reservation #@editingReservation.Id</h4>
+
+                        <div class="form-group">
+                            <label>Vehicle</label>
+                            <input class="form-control"
+                                   value="@editingReservation.VehicleModel"
+                                   disabled />
+                        </div>
+
+                        <div class="date-fields">
+                            <div class="form-group">
+                                <label>Pickup Date</label>
+                                <input type="date"
+                                       class="form-control"
+                                       @bind="editPickupDate" />
+                            </div>
+
+                            <div class="form-group">
+                                <label>Return Date</label>
+                                <input type="date"
+                                       class="form-control"
+                                       @bind="editReturnDate" />
+                            </div>
+                        </div>
+
+                        @if (editError != "")
+                        {
+                            <p class="error-message">@editError</p>
+                        }
+
+                        @if (datesValid)
+                        {
+                            <p class="success-message">
+                                Dates are valid. Saving will be available
+                                when the reservation API is connected.
+                            </p>
+                        }
+
+                        <div class="form-actions">
+                            <button class="check-button"
+                                    @onclick="ValidateChanges">
+                                Check Changes
+                            </button>
+
+                            <button class="save-button" disabled>
+                                Save Changes
+                            </button>
+
+                            <button class="back-button"
+                                    @onclick="CloseEditForm">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (reservationToCancel != null)
+                {
+                    <div class="cancel-confirmation">
+
+                        <h4>
+                            Cancel Reservation #@reservationToCancel.Id
+                        </h4>
+
+                        <p>
+                            Are you sure you want to cancel this reservation?
+                        </p>
+
+                        <div class="cancel-details">
+                            <p>
+                                <strong>Vehicle:</strong>
+                                @reservationToCancel.VehicleModel
+                            </p>
+
+                            <p>
+                                <strong>Pickup:</strong>
+                                @reservationToCancel.PickupDate.ToString("dd MMM yyyy")
+                            </p>
+
+                            <p>
+                                <strong>Return:</strong>
+                                @reservationToCancel.ReturnDate.ToString("dd MMM yyyy")
+                            </p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="confirm-cancel-button" disabled>
+                                Confirm Cancellation
+                            </button>
+
+                            <button class="back-button"
+                                    @onclick="CloseCancelConfirmation">
+                                Go Back
+                            </button>
+                        </div>
+
+                        <p class="api-note">
+                            Cancellation will be available when
+                            the reservation API is connected.
+                        </p>
+                    </div>
+                }
+
+                <p class="api-note">
+                    Saving changes and cancelling reservations
+                    require the reservation API.
+                </p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool loading = true;
+    private bool isCustomer;
+
+    private List<Reservation> reservations = new();
+
+    private Reservation? editingReservation;
+    private Reservation? reservationToCancel;
+
+    private DateOnly editPickupDate;
+    private DateOnly editReturnDate;
+
+    private string editError = "";
+    private bool datesValid = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState =
+            await AuthService.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        isCustomer = user.Identity?.IsAuthenticated == true
+                     && user.IsInRole("CUSTOMER");
+
+        loading = false;
+    }
+
+    private bool CanManage(Reservation reservation)
+    {
+        return reservation.Status == "PENDING"
+               || reservation.Status == "APPROVED";
+    }
+
+    private void OpenEditForm(Reservation reservation)
+    {
+        editingReservation = reservation;
+        reservationToCancel = null;
+
+        editPickupDate = reservation.PickupDate;
+        editReturnDate = reservation.ReturnDate;
+
+        editError = "";
+        datesValid = false;
+    }
+
+    private void CloseEditForm()
+    {
+        editingReservation = null;
+        editError = "";
+        datesValid = false;
+    }
+
+    private void ValidateChanges()
+    {
+        editError = "";
+        datesValid = false;
+
+        if (editPickupDate < DateOnly.FromDateTime(DateTime.Today))
+        {
+            editError = "Pickup date cannot be in the past.";
+            return;
+        }
+
+        if (editReturnDate <= editPickupDate)
+        {
+            editError = "Return date must be after pickup date.";
+            return;
+        }
+
+        datesValid = true;
+    }
+
+    private void OpenCancelConfirmation(Reservation reservation)
+    {
+        reservationToCancel = reservation;
+        editingReservation = null;
+        datesValid = false;
+    }
+
+    private void CloseCancelConfirmation()
+    {
+        reservationToCancel = null;
+    }
+}
+

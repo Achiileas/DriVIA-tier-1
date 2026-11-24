@@ -1,0 +1,649 @@
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "EMPLOYEE")]
+
+@page "/employee/vehicles"
+@rendermode InteractiveServer
+
+@using DriVIABlazor.Models
+@using DriVIABlazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject SimpleAuthService AuthService
+@inject CarApiService CarApiService
+
+<PageTitle>Employee Vehicle Management</PageTitle>
+
+<div class="employee-vehicles-page">
+
+    <div class="page-header">
+        <h1>Employee Vehicle Management</h1>
+        <p>View and manage the DriVIA vehicle fleet.</p>
+    </div>
+
+    @if (!isEmployee)
+    {
+        <div class="access-message">
+            <h3>Employee Access Required</h3>
+            <p>You must log in as an employee to manage vehicles.</p>
+            <a href="/login" class="primary-button">Go to Login</a>
+        </div>
+    }
+    else
+    {
+        <h2>Fleet Overview</h2>
+
+        <div class="dashboard-cards">
+            <div class="dashboard-card">
+                <h3>Total Vehicles</h3>
+                <p>@cars.Count</p>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Available Vehicles</h3>
+                <p>@AvailableCount</p>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>Unavailable Vehicles</h3>
+                <p>@UnavailableCount</p>
+            </div>
+        </div>
+
+        <div class="fleet-heading">
+            <h2>Fleet Vehicles</h2>
+
+            <button class="primary-button"
+                    disabled="@isSaving"
+                    @onclick="OpenAddForm">
+                Add Vehicle
+            </button>
+        </div>
+
+        @if (actionMessage != "")
+        {
+            <p class="@actionMessageClass">@actionMessage</p>
+        }
+
+        @if (isLoading)
+        {
+            <p>Loading vehicles...</p>
+        }
+        else if (errorMessage != "")
+        {
+            <p class="error-message">@errorMessage</p>
+        }
+        else if (cars.Count == 0)
+        {
+            <div class="empty-message">
+                <p>No vehicles found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-container">
+                <table class="vehicle-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Registration</th>
+                            <th>Model</th>
+                            <th>Category</th>
+                            <th>Price / Day</th>
+                            <th>Location</th>
+                            <th>Gearbox</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (Car car in cars)
+                        {
+                            <tr>
+                                <td>@car.Id</td>
+                                <td>@car.RegistrationNo</td>
+                                <td>@car.Model</td>
+                                <td>@car.Category</td>
+                                <td>@car.PricePerDay DKK</td>
+                                <td>@car.LocationName</td>
+                                <td>@car.Gearbox</td>
+                                <td>
+                                    <span class="status-badge">
+                                        @car.Status
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="edit-button"
+                                                disabled="@isSaving"
+                                                @onclick="() => OpenEditForm(car)">
+                                            Edit
+                                        </button>
+
+                                        <button class="delete-button"
+                                                disabled="@isSaving"
+                                                @onclick="() => OpenDeleteConfirmation(car)">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (showForm)
+        {
+            <div class="vehicle-form">
+
+                @if (isEditing)
+                {
+                    <h3>Edit Vehicle #@selectedCarId</h3>
+                }
+                else
+                {
+                    <h3>Add New Vehicle</h3>
+                }
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Registration Number</label>
+                        <input class="form-control"
+                               @bind="registrationNo" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Model</label>
+                        <input class="form-control"
+                               @bind="model" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input class="form-control"
+                               @bind="category" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Price Per Day (DKK)</label>
+                        <input type="number"
+                               class="form-control"
+                               min="1"
+                               step="0.01"
+                               @bind="pricePerDay" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Location ID</label>
+                        <input type="number"
+                               class="form-control"
+                               min="1"
+                               @bind="locationId" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gearbox</label>
+                        <select class="form-control" @bind="gearbox">
+                            <option value="">Select gearbox</option>
+                            <option value="MANUAL">Manual</option>
+                            <option value="AUTOMATIC">Automatic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-control" @bind="status">
+                            <option value="">Select status</option>
+                            <option value="AVAILABLE">Available</option>
+                            <option value="UNAVAILABLE">Unavailable</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Horsepower</label>
+                        <input type="number"
+                               class="form-control"
+                               min="1"
+                               @bind="horsepower" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Production Date</label>
+                        <input type="date"
+                               class="form-control"
+                               @bind="productionDate" />
+                    </div>
+                </div>
+
+                @if (validationMessage != "")
+                {
+                    <p class="error-message">@validationMessage</p>
+                }
+
+                @if (formValid)
+                {
+                    <p class="success-message">
+                        Vehicle information is valid.
+                    </p>
+                }
+
+                <div class="form-actions">
+                    <button class="primary-button"
+                            disabled="@isSaving"
+                            @onclick="ValidateVehicle">
+                        Check Details
+                    </button>
+
+                    <button class="save-button"
+                            disabled="@isSaving"
+                            @onclick="SaveVehicleAsync">
+                        @(isSaving ? "Saving..." : isEditing ? "Save Changes" : "Save Vehicle")
+                    </button>
+
+                    <button class="secondary-button"
+                            disabled="@isSaving"
+                            @onclick="CloseForm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (carToDelete != null)
+        {
+            <div class="delete-confirmation">
+                <h3>Delete Vehicle #@carToDelete.Id</h3>
+
+                <p>
+                    Are you sure you want to delete this vehicle?
+                </p>
+
+                <div class="delete-details">
+                    <p>
+                        <strong>Registration:</strong>
+                        @carToDelete.RegistrationNo
+                    </p>
+
+                    <p>
+                        <strong>Model:</strong>
+                        @carToDelete.Model
+                    </p>
+
+                    <p>
+                        <strong>Location:</strong>
+                        @carToDelete.LocationName
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="confirm-delete-button"
+                            disabled="@isSaving"
+                            @onclick="DeleteVehicleAsync">
+                        @(isSaving ? "Deleting..." : "Confirm Delete")
+                    </button>
+
+                    <button class="secondary-button"
+                            disabled="@isSaving"
+                            @onclick="CloseDeleteConfirmation">
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        }
+
+        <p class="api-note">
+            Vehicle Add, Edit and Delete require the
+            Tier 2 Vehicle Management REST API.
+        </p>
+    }
+</div>
+
+@code {
+    private List<Car> cars = new();
+
+    private bool isEmployee;
+    private bool isLoading = true;
+    private bool isSaving = false;
+
+    private string errorMessage = "";
+    private string validationMessage = "";
+    private string actionMessage = "";
+    private string actionMessageClass = "";
+
+    private bool showForm = false;
+    private bool isEditing = false;
+    private bool formValid = false;
+
+    private long selectedCarId;
+
+    private string registrationNo = "";
+    private string model = "";
+    private string category = "";
+    private int pricePerDay;
+    private int locationId;
+    private string gearbox = "";
+    private string status = "";
+    private int horsepower;
+    private DateOnly productionDate = DateOnly.FromDateTime(DateTime.Today);
+
+    private Car? carToDelete;
+
+    private int AvailableCount
+    {
+        get
+        {
+            int count = 0;
+
+            foreach (Car car in cars)
+            {
+                if (car.Status == "AVAILABLE")
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    private int UnavailableCount
+    {
+        get
+        {
+            return cars.Count - AvailableCount;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthenticationState authState =
+            await AuthService.GetAuthenticationStateAsync();
+
+        isEmployee =
+            authState.User.Identity?.IsAuthenticated == true &&
+            authState.User.IsInRole("EMPLOYEE");
+
+        if (!isEmployee)
+        {
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            cars = await CarApiService.GetAllCarsAsync();
+        }
+        catch (Exception)
+        {
+            errorMessage = "Could not load vehicles from the backend.";
+        }
+
+        isLoading = false;
+    }
+
+    private void OpenAddForm()
+    {
+        showForm = true;
+        isEditing = false;
+        carToDelete = null;
+
+        selectedCarId = 0;
+        registrationNo = "";
+        model = "";
+        category = "";
+        pricePerDay = 0;
+        locationId = 0;
+        gearbox = "";
+        status = "AVAILABLE";
+        horsepower = 0;
+        productionDate = DateOnly.FromDateTime(DateTime.Today);
+
+        validationMessage = "";
+        formValid = false;
+        actionMessage = "";
+    }
+
+    private void OpenEditForm(Car car)
+    {
+        showForm = true;
+        isEditing = true;
+        carToDelete = null;
+
+        selectedCarId = car.Id;
+        registrationNo = car.RegistrationNo;
+        model = car.Model;
+        category = car.Category;
+        pricePerDay = car.PricePerDay;
+        locationId = car.LocationId;
+        gearbox = car.Gearbox;
+        status = car.Status;
+        horsepower = car.Horsepower;
+        productionDate = car.ProductionDate;
+
+        validationMessage = "";
+        formValid = false;
+        actionMessage = "";
+    }
+
+    private void CloseForm()
+    {
+        showForm = false;
+        validationMessage = "";
+        formValid = false;
+    }
+
+    private void ValidateVehicle()
+    {
+        validationMessage = "";
+        formValid = false;
+
+        if (registrationNo.Trim() == "")
+        {
+            validationMessage = "Registration number is required.";
+            return;
+        }
+
+        if (model.Trim() == "")
+        {
+            validationMessage = "Vehicle model is required.";
+            return;
+        }
+
+        if (category.Trim() == "")
+        {
+            validationMessage = "Vehicle category is required.";
+            return;
+        }
+
+        if (pricePerDay <= 0)
+        {
+            validationMessage = "Price per day must be greater than zero.";
+            return;
+        }
+
+        if (locationId <= 0)
+        {
+            validationMessage = "Please enter a valid location ID.";
+            return;
+        }
+
+        if (gearbox == "")
+        {
+            validationMessage = "Please select a gearbox.";
+            return;
+        }
+
+        if (status == "")
+        {
+            validationMessage = "Please select a vehicle status.";
+            return;
+        }
+
+        if (horsepower <= 0)
+        {
+            validationMessage = "Horsepower must be greater than zero.";
+            return;
+        }
+
+        if (productionDate > DateOnly.FromDateTime(DateTime.Today))
+        {
+            validationMessage = "Production date cannot be in the future.";
+            return;
+        }
+
+        formValid = true;
+    }
+
+    private async Task SaveVehicleAsync()
+    {
+        if (isSaving)
+        {
+            return;
+        }
+
+        ValidateVehicle();
+
+        if (!formValid)
+        {
+            return;
+        }
+
+        isSaving = true;
+        actionMessage = "";
+
+        try
+        {
+            Car car = new Car
+            {
+                Id = selectedCarId,
+                RegistrationNo = registrationNo,
+                Model = model,
+                Category = category,
+                PricePerDay = pricePerDay,
+                LocationId = locationId,
+                Gearbox = gearbox,
+                Status = status,
+                Horsepower = horsepower,
+                ProductionDate = productionDate
+            };
+
+            bool success;
+
+            if (isEditing)
+            {
+                success = await CarApiService.UpdateCarAsync(car);
+            }
+            else
+            {
+                success = await CarApiService.AddCarAsync(car);
+            }
+
+            if (success)
+            {
+                showForm = false;
+                formValid = false;
+
+                actionMessage = isEditing
+                    ? "Vehicle updated successfully."
+                    : "Vehicle added successfully.";
+
+                actionMessageClass = "success-message";
+
+                await ReloadVehiclesAsync();
+            }
+            else
+            {
+                actionMessage =
+                    "Could not save vehicle. Please check the backend API.";
+
+                actionMessageClass = "error-message";
+            }
+        }
+        catch (Exception)
+        {
+            actionMessage =
+                "Could not connect to the Vehicle Management API.";
+
+            actionMessageClass = "error-message";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteVehicleAsync()
+    {
+        if (isSaving || carToDelete == null)
+        {
+            return;
+        }
+
+        isSaving = true;
+        actionMessage = "";
+
+        try
+        {
+            bool success =
+                await CarApiService.DeleteCarAsync(carToDelete.Id);
+
+            if (success)
+            {
+                carToDelete = null;
+
+                actionMessage = "Vehicle deleted successfully.";
+                actionMessageClass = "success-message";
+
+                await ReloadVehiclesAsync();
+            }
+            else
+            {
+                actionMessage =
+                    "Could not delete vehicle. Please check the backend API.";
+
+                actionMessageClass = "error-message";
+            }
+        }
+        catch (Exception)
+        {
+            actionMessage =
+                "Could not connect to the Vehicle Management API.";
+
+            actionMessageClass = "error-message";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ReloadVehiclesAsync()
+    {
+        try
+        {
+            cars = await CarApiService.GetAllCarsAsync();
+            errorMessage = "";
+        }
+        catch (Exception)
+        {
+            errorMessage = "Could not refresh the vehicle list.";
+        }
+    }
+
+    private void OpenDeleteConfirmation(Car car)
+    {
+        carToDelete = car;
+        showForm = false;
+        formValid = false;
+        actionMessage = "";
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        carToDelete = null;
+    }
+}
+
