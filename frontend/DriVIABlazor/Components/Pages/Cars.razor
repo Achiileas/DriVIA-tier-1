@@ -1,13 +1,33 @@
+
 @page "/cars"
 @rendermode InteractiveServer
 
-@using DriveVIA.Client.Models
+@using DriVIABlazor.Models
 @using DriVIABlazor.Services
 @inject CarApiService CarApiService
+@inject LocationApiService LocationApiService
+@inject NavigationManager Navigation
 
 <h3>Browse Cars</h3>
 
 <p>Search for cars at DriVIA Car Rental</p>
+
+@if (SearchPickup.HasValue && SearchReturn.HasValue)
+{
+    <div class="alert alert-info">
+        <strong>Selected rental period</strong>
+
+        <p>
+            Pickup:
+            @SearchPickup.Value.ToString("dd MMM yyyy HH:mm")
+        </p>
+
+        <p>
+            Return:
+            @SearchReturn.Value.ToString("dd MMM yyyy HH:mm")
+        </p>
+    </div>
+}
 
 <div class="mb-3">
     <label class="form-label">Model</label>
@@ -91,6 +111,7 @@ else
                 <th>Price (DKK/day)</th>
                 <th>Location</th>
                 <th>Gearbox</th>
+                <th>Booking</th>
             </tr>
         </thead>
         <tbody>
@@ -103,6 +124,12 @@ else
                     <td>@car.Price</td>
                     <td>@car.Location</td>
                     <td>@car.Gearbox</td>
+                    <td>
+                        <button class="btn btn-primary"
+                                @onclick="() => BookCar(car.Id)">
+                            Book Now
+                        </button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -110,6 +137,15 @@ else
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "location")]
+    public string? SearchLocation { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pickup")]
+    public DateTime? SearchPickup { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnDate")]
+    public DateTime? SearchReturn { get; set; }
+
     private List<Car> cars = new();
     private List<Car> filteredCars = new();
 
@@ -122,16 +158,63 @@ else
     private bool loading = true;
     private string? errorMessage;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        loading = true;
+        errorMessage = null;
+
         try
         {
-            cars = await CarApiService.GetAllCarsAsync();
+            if (!string.IsNullOrWhiteSpace(SearchLocation) &&
+                SearchPickup.HasValue &&
+                SearchReturn.HasValue)
+            {
+                selectedLocation = SearchLocation;
+
+                if (SearchPickup.Value <= DateTime.Now ||
+                    SearchReturn.Value <= SearchPickup.Value)
+                {
+                    errorMessage = "Invalid selected date.";
+                    cars = new List<Car>();
+                    filteredCars = new List<Car>();
+                    return;
+                }
+
+                List<Location> locations =
+                    await LocationApiService.GetAllLocationsAsync();
+
+                Location? selected =
+                    locations.FirstOrDefault(location =>
+                        location.Name.Equals(
+                            SearchLocation.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
+
+                if (selected == null)
+                {
+                    errorMessage = "The selected location was not found.";
+                    cars = new List<Car>();
+                    filteredCars = new List<Car>();
+                    return;
+                }
+
+                cars = await CarApiService.GetAvailableCarsAsync(
+                    selected.Id,
+                    DateOnly.FromDateTime(SearchPickup.Value),
+                    DateOnly.FromDateTime(SearchReturn.Value));
+            }
+            else
+            {
+                selectedLocation = "";
+                cars = await CarApiService.GetAllCarsAsync();
+            }
+
             filteredCars = cars.ToList();
         }
         catch (Exception)
         {
             errorMessage = "Could not load cars from the backend.";
+            cars = new List<Car>();
+            filteredCars = new List<Car>();
         }
         finally
         {
@@ -153,7 +236,9 @@ else
              car.Price <= maximumPrice.Value) &&
 
             (selectedLocation == "" ||
-             car.Location == selectedLocation) &&
+             car.Location.Equals(
+                 selectedLocation,
+                 StringComparison.OrdinalIgnoreCase)) &&
 
             (selectedGearbox == "" ||
              car.Gearbox == selectedGearbox)
@@ -170,4 +255,18 @@ else
 
         filteredCars = cars.ToList();
     }
+
+
+	private void BookCar(long vehicleId)
+	{
+    	string url = $"/book-car/{vehicleId}";
+
+    	if (SearchPickup.HasValue && SearchReturn.HasValue)
+    	{
+        	url += $"?pickup={SearchPickup.Value:yyyy-MM-ddTHH:mm}" +
+               	$"&returnDate={SearchReturn.Value:yyyy-MM-ddTHH:mm}";
+    	}
+
+    	Navigation.NavigateTo(url);
+	}
 }
