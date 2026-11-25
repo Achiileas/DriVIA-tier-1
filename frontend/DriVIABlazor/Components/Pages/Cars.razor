@@ -83,9 +83,11 @@
         Search
     </button>
 
-    <button class="btn btn-secondary" @onclick="ClearSearch">
-        Clear
-    </button>
+    
+<button class="btn btn-secondary" @onclick="ClearSearch">
+    Clear Filters
+</button>
+
 </div>
 
 @if (loading)
@@ -98,7 +100,20 @@ else if (errorMessage != null)
 }
 else if (filteredCars.Count == 0)
 {
-    <p>No cars found.</p>
+    @if (cars.Count == 0 &&
+         SearchPickup.HasValue &&
+         SearchReturn.HasValue &&
+         !string.IsNullOrWhiteSpace(SearchLocation))
+    {
+        <p>
+            No cars are available at the selected location
+            for this rental period. Please try different dates.
+        </p>
+    }
+    else
+    {
+        <p>No cars found matching your search.</p>
+    }
 }
 else
 {
@@ -197,10 +212,12 @@ else
                     return;
                 }
 
-                cars = await CarApiService.GetAvailableCarsAsync(
-                    selected.Id,
-                    DateOnly.FromDateTime(SearchPickup.Value),
-                    DateOnly.FromDateTime(SearchReturn.Value));
+                
+cars = await CarApiService.GetAvailableCarsAsync(
+    selected.Id,
+    SearchPickup.Value,
+    SearchReturn.Value);
+
             }
             else
             {
@@ -245,28 +262,29 @@ else
         ).ToList();
     }
 
-    private void ClearSearch()
+
+private void ClearSearch()
+{
+    searchModel = "";
+    selectedCategory = "";
+    maximumPrice = null;
+    selectedLocation = SearchLocation ?? "";
+    selectedGearbox = "";
+
+    filteredCars = cars.ToList();
+}
+
+
+    private void BookCar(long vehicleId)
     {
-        searchModel = "";
-        selectedCategory = "";
-        maximumPrice = null;
-        selectedLocation = "";
-        selectedGearbox = "";
+        string url = $"/book-car/{vehicleId}";
 
-        filteredCars = cars.ToList();
+        if (SearchPickup.HasValue && SearchReturn.HasValue)
+        {
+            url += $"?pickup={SearchPickup.Value:yyyy-MM-ddTHH:mm}" +
+                   $"&returnDate={SearchReturn.Value:yyyy-MM-ddTHH:mm}";
+        }
+
+        Navigation.NavigateTo(url);
     }
-
-
-	private void BookCar(long vehicleId)
-	{
-    	string url = $"/book-car/{vehicleId}";
-
-    	if (SearchPickup.HasValue && SearchReturn.HasValue)
-    	{
-        	url += $"?pickup={SearchPickup.Value:yyyy-MM-ddTHH:mm}" +
-               	$"&returnDate={SearchReturn.Value:yyyy-MM-ddTHH:mm}";
-    	}
-
-    	Navigation.NavigateTo(url);
-	}
 }

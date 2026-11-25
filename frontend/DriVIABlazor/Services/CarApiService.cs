@@ -49,16 +49,16 @@ public class CarApiService
         return await httpClient.GetFromJsonAsync<Car>(
             $"api/vehicles/{id}");
     }
-    
+
     public async Task<List<Car>> GetAvailableCarsAsync(
         int locationId,
-        DateOnly pickupDate,
-        DateOnly returnDate)
+        DateTime pickupDate,
+        DateTime returnDate)
     {
         string url = $"api/vehicles/available" +
                      $"?locationId={locationId}" +
-                     $"&pickupDate={pickupDate:yyyy-MM-dd}" +
-                     $"&returnDate={returnDate:yyyy-MM-dd}";
+                     $"&pickupDate={pickupDate:yyyy-MM-ddTHH:mm:ss}" +
+                     $"&returnDate={returnDate:yyyy-MM-ddTHH:mm:ss}";
 
         List<Car>? cars =
             await httpClient.GetFromJsonAsync<List<Car>>(url);

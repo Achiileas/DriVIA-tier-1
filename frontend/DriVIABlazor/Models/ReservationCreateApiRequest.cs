@@ -6,7 +6,7 @@ public class ReservationCreateApiRequest
 
     public int VehicleId { get; set; }
 
-    public DateOnly PickupDate { get; set; }
+    public DateTime PickupDate { get; set; }
 
-    public DateOnly ReturnDate { get; set; }
+    public DateTime ReturnDate { get; set; }
 }
