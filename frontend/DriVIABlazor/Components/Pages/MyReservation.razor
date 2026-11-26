@@ -1,3 +1,4 @@
+
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "CUSTOMER")]
 
@@ -26,6 +27,12 @@
             <p>Checking authentication...</p>
         </div>
     }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
     else if (!isCustomer)
     {
         <div class="access-card">
@@ -35,6 +42,7 @@
                 Please log in as a customer to view
                 and manage your reservations.
             </p>
+
             <a href="/login" class="login-button">
                 Go to Login
             </a>
@@ -61,9 +69,10 @@
                     <div class="empty-icon">🚗</div>
                     <h5>Reservation Information Unavailable</h5>
                     <p>
-                        Reservation data is not available yet.
-                        The reservation API still needs to be connected.
+                        Your reservations cannot be displayed at the moment.
+                        Reservation management is not connected yet.
                     </p>
+
                     <a href="/cars" class="browse-button">
                         Browse Cars
                     </a>
@@ -145,14 +154,18 @@
                                 <label>Pickup Date</label>
                                 <input type="date"
                                        class="form-control"
-                                       @bind="editPickupDate" />
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                       @bind="editPickupDate"
+                                       @bind:after="ResetValidation" />
                             </div>
 
                             <div class="form-group">
                                 <label>Return Date</label>
                                 <input type="date"
                                        class="form-control"
-                                       @bind="editReturnDate" />
+                                       min="@editPickupDate.ToString("yyyy-MM-dd")"
+                                       @bind="editReturnDate"
+                                       @bind:after="ResetValidation" />
                             </div>
                         </div>
 
@@ -247,6 +260,8 @@
     private bool loading = true;
     private bool isCustomer;
 
+    private string errorMessage = "";
+
     private List<Reservation> reservations = new();
 
     private Reservation? editingReservation;
@@ -260,21 +275,40 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AuthenticationState authState =
-            await AuthService.GetAuthenticationStateAsync();
+        loading = true;
+        errorMessage = "";
 
-        var user = authState.User;
+        try
+        {
+            AuthenticationState authState =
+                await AuthService.GetAuthenticationStateAsync();
 
-        isCustomer = user.Identity?.IsAuthenticated == true
-                     && user.IsInRole("CUSTOMER");
+            var user = authState.User;
 
-        loading = false;
+            isCustomer = user.Identity?.IsAuthenticated == true
+                         && user.IsInRole("CUSTOMER");
+        }
+        catch (Exception)
+        {
+            errorMessage =
+                "Unable to verify your login. Please try again later.";
+        }
+        finally
+        {
+            loading = false;
+        }
     }
 
     private bool CanManage(Reservation reservation)
     {
         return reservation.Status == "PENDING"
                || reservation.Status == "APPROVED";
+    }
+
+    private void ResetValidation()
+    {
+        editError = "";
+        datesValid = false;
     }
 
     private void OpenEditForm(Reservation reservation)
@@ -285,21 +319,30 @@
         editPickupDate = reservation.PickupDate;
         editReturnDate = reservation.ReturnDate;
 
-        editError = "";
-        datesValid = false;
+        ResetValidation();
     }
 
     private void CloseEditForm()
     {
         editingReservation = null;
-        editError = "";
-        datesValid = false;
+        ResetValidation();
     }
 
     private void ValidateChanges()
     {
-        editError = "";
-        datesValid = false;
+        ResetValidation();
+
+        if (editPickupDate == default)
+        {
+            editError = "Please select a pickup date.";
+            return;
+        }
+
+        if (editReturnDate == default)
+        {
+            editError = "Please select a return date.";
+            return;
+        }
 
         if (editPickupDate < DateOnly.FromDateTime(DateTime.Today))
         {
@@ -309,7 +352,7 @@
 
         if (editReturnDate <= editPickupDate)
         {
-            editError = "Return date must be after pickup date.";
+            editError = "Return date must be after the pickup date.";
             return;
         }
 
@@ -320,7 +363,7 @@
     {
         reservationToCancel = reservation;
         editingReservation = null;
-        datesValid = false;
+        ResetValidation();
     }
 
     private void CloseCancelConfirmation()
@@ -328,4 +371,3 @@
         reservationToCancel = null;
     }
 }
-

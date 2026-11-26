@@ -8,9 +8,12 @@
 @inject LocationApiService LocationApiService
 @inject NavigationManager Navigation
 
+
 <h3>Browse Cars</h3>
 
+
 <p>Search for cars at DriVIA Car Rental</p>
+
 
 @if (SearchPickup.HasValue && SearchReturn.HasValue)
 {
@@ -29,12 +32,14 @@
     </div>
 }
 
+
 <div class="mb-3">
     <label class="form-label">Model</label>
     <input class="form-control"
            placeholder="Enter car model"
            @bind="searchModel" />
 </div>
+
 
 <div class="mb-3">
     <label class="form-label">Category</label>
@@ -46,6 +51,7 @@
         }
     </select>
 </div>
+
 
 <div class="mb-3">
     <label class="form-label">Maximum Price (DKK/day)</label>
@@ -90,6 +96,7 @@
 
 </div>
 
+
 @if (loading)
 {
     <p>Loading cars...</p>
@@ -115,6 +122,7 @@ else if (filteredCars.Count == 0)
         <p>No cars found matching your search.</p>
     }
 }
+
 else
 {
     <table class="table">
@@ -132,6 +140,7 @@ else
         <tbody>
             @foreach (var car in filteredCars)
             {
+                
                 <tr>
                     <td>@car.Id</td>
                     <td>@car.Model</td>
@@ -150,6 +159,7 @@ else
         </tbody>
     </table>
 }
+
 
 @code {
     [SupplyParameterFromQuery(Name = "location")]
@@ -170,9 +180,12 @@ else
     private string selectedLocation = "";
     private string selectedGearbox = "";
 
+    
     private bool loading = true;
     private string? errorMessage;
 
+    
+    
     protected override async Task OnParametersSetAsync()
     {
         loading = true;
@@ -189,7 +202,9 @@ else
                 if (SearchPickup.Value <= DateTime.Now ||
                     SearchReturn.Value <= SearchPickup.Value)
                 {
-                    errorMessage = "Invalid selected date.";
+                    errorMessage =
+                        "Please select a future pickup date and a return date after the pickup date.";
+
                     cars = new List<Car>();
                     filteredCars = new List<Car>();
                     return;
@@ -204,9 +219,13 @@ else
                             SearchLocation.Trim(),
                             StringComparison.OrdinalIgnoreCase));
 
+                
+                
                 if (selected == null)
                 {
-                    errorMessage = "The selected location was not found.";
+                    errorMessage =
+                        "The selected location was not found.";
+
                     cars = new List<Car>();
                     filteredCars = new List<Car>();
                     return;
@@ -227,16 +246,47 @@ cars = await CarApiService.GetAvailableCarsAsync(
 
             filteredCars = cars.ToList();
         }
-        catch (Exception)
+        
+        catch (Exception ex)
         {
-            errorMessage = "Could not load cars from the backend.";
+            
+            errorMessage = GetFriendlyError(ex);
             cars = new List<Car>();
             filteredCars = new List<Car>();
         }
+        
         finally
         {
+            
             loading = false;
         }
+    }
+
+    private string GetFriendlyError(Exception ex)
+    {
+        if (ex.Message ==
+            "Unable to connect to the service. Please try again later." ||
+            ex.Message ==
+            "The request timed out. Please try again.")
+        {
+            
+            return ex.Message;
+        }
+        
+
+        foreach (System.Net.HttpStatusCode code in
+                 Enum.GetValues<System.Net.HttpStatusCode>())
+        {
+            if (ex.Message == ApiErrorHelper.GetErrorMessage(code))
+            {
+                
+                return ex.Message;
+            }
+            
+        }
+        
+
+        return "Unable to load cars. Please try again later.";
     }
 
     private void SearchCars()
@@ -271,8 +321,10 @@ private void ClearSearch()
     selectedLocation = SearchLocation ?? "";
     selectedGearbox = "";
 
+
     filteredCars = cars.ToList();
 }
+
 
 
     private void BookCar(long vehicleId)
