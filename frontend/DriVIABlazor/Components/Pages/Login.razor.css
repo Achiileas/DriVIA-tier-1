@@ -1,0 +1,704 @@
+
+/* Main login layout */
+
+.login-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 85vh;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Left side banner */
+
+.login-banner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 50px;
+    color: white;
+    background: linear-gradient(
+            145deg,
+            #020617 0%,
+            #0f172a 40%,
+            #1e40af 100%
+    );
+    overflow: hidden;
+}
+
+.login-banner::before {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.15);
+    top: -150px;
+    right: -150px;
+    pointer-events: none;
+}
+
+.login-banner::after {
+    content: "";
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    bottom: -150px;
+    left: -100px;
+    pointer-events: none;
+}
+
+/* DriVIA logo */
+
+.brand-logo {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    position: relative;
+    z-index: 1;
+}
+
+.brand-logo span {
+    color: #60a5fa;
+}
+
+/* Banner content */
+
+.banner-content {
+    position: relative;
+    z-index: 1;
+    padding: 50px 0;
+}
+
+.banner-tag {
+    display: inline-block;
+    padding: 9px 16px;
+    border-radius: 30px;
+    background: rgba(96, 165, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    color: #93c5fd;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.banner-content h1 {
+    font-size: clamp(36px, 4vw, 60px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -2px;
+    margin: 25px 0;
+}
+
+.banner-content p {
+    font-size: 17px;
+    line-height: 1.8;
+    color: #cbd5e1;
+    max-width: 420px;
+}
+
+/* Rental features */
+
+.banner-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 35px;
+}
+
+.banner-features span {
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 13px;
+    color: #e2e8f0;
+    transition: background 0.2s ease;
+}
+
+.banner-features span:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.banner-footer {
+    font-size: 13px;
+    color: #94a3b8;
+    position: relative;
+    z-index: 1;
+    line-height: 1.6;
+}
+
+/* Right side login panel */
+
+.login-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 50px;
+    background: #ffffff;
+    min-width: 0;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    animation: loginFadeIn 0.5s ease;
+}
+
+/* Back to home link */
+
+.back-home {
+    display: inline-block;
+    margin-bottom: 35px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.back-home:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.back-home:active {
+    color: #1e40af;
+}
+
+.back-home:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+/* Login icon */
+
+.login-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 65px;
+    height: 65px;
+    background: #eff6ff;
+    color: #2563eb;
+    border-radius: 18px;
+    margin-bottom: 24px;
+}
+
+.login-icon svg {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+/* Login heading */
+
+.login-card h2 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #0f172a;
+    margin-bottom: 10px;
+}
+
+.login-subtitle {
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 35px;
+}
+
+/* Form fields */
+
+.login-field {
+    margin-bottom: 22px;
+}
+
+.login-field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 9px;
+}
+
+.login-field ::deep .login-input {
+    width: 100%;
+    height: 54px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    border: 1px solid #dbe2ea;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.login-field ::deep .login-input:hover {
+    border-color: #94a3b8;
+}
+
+.login-field ::deep .login-input:focus {
+    background: white;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.login-field ::deep .login-input::placeholder {
+    color: #94a3b8;
+}
+
+.login-field ::deep .login-input:disabled {
+    background: #e2e8f0;
+    cursor: not-allowed;
+}
+
+/* Password field */
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper ::deep .login-input {
+    padding-right: 75px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.password-toggle:hover {
+    color: #1e40af;
+}
+
+.password-toggle:active {
+    color: #172554;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+/* Login submit button */
+
+.login-submit {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 8px;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+    transition: all 0.25s ease;
+}
+
+.login-submit:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35);
+}
+
+.login-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.login-submit:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.login-submit:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 4px;
+}
+
+/* Error message */
+
+.login-error {
+    padding: 14px 16px;
+    margin-top: 20px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    color: #b91c1c;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+/* Success message */
+
+.login-success {
+    padding: 14px 16px;
+    margin-top: 20px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    color: #15803d;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+/* Form validation */
+
+.login-field ::deep .validation-message {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.login-field ::deep .login-input.invalid {
+    border-color: #dc2626;
+}
+
+.login-field ::deep .login-input.invalid:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+/* Divider */
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 35px 0 25px;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+}
+
+.login-divider span {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Login footer */
+
+.login-footer {
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.7;
+}
+
+.login-footer p {
+    margin-bottom: 0;
+}
+
+/* Register account link */
+
+.login-footer a {
+    color: #2563eb;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.login-footer a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.login-footer a:active {
+    color: #1e3a8a;
+}
+
+.login-footer a:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+/* Text selection */
+
+.login-page ::deep ::selection {
+    background: #bfdbfe;
+    color: #1e3a8a;
+}
+
+/* Login animation */
+
+@keyframes loginFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Medium desktop screens */
+
+@media (max-width: 1200px) {
+
+    .login-banner {
+        padding: 40px;
+    }
+
+    .login-panel {
+        padding: 40px;
+    }
+
+    .banner-content h1 {
+        font-size: 44px;
+    }
+
+    .banner-features {
+        gap: 10px;
+    }
+}
+
+/* Tablet screens */
+
+@media (max-width: 1000px) {
+
+    .login-banner {
+        padding: 35px;
+    }
+
+    .login-panel {
+        padding: 35px;
+    }
+
+    .banner-content h1 {
+        font-size: 38px;
+    }
+
+    .banner-content p {
+        font-size: 15px;
+    }
+
+    .banner-features span {
+        font-size: 12px;
+    }
+
+    .login-card h2 {
+        font-size: 30px;
+    }
+}
+
+/* Mobile screens */
+
+@media (max-width: 768px) {
+
+    .login-page {
+        grid-template-columns: 1fr;
+        border-radius: 16px;
+    }
+
+    .login-banner {
+        padding: 30px;
+    }
+
+    .banner-content {
+        padding: 30px 0;
+    }
+
+    .banner-content h1 {
+        font-size: 36px;
+    }
+
+    .banner-features {
+        margin-top: 20px;
+    }
+
+    .login-panel {
+        padding: 35px 25px;
+    }
+
+    .login-card h2 {
+        font-size: 28px;
+    }
+
+    .back-home {
+        margin-bottom: 25px;
+    }
+
+    .login-subtitle {
+        margin-bottom: 25px;
+    }
+
+    .login-icon {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+/* Small mobile screens */
+
+@media (max-width: 480px) {
+
+    .login-page {
+        border-radius: 12px;
+    }
+
+    .login-banner {
+        padding: 20px;
+    }
+
+    .brand-logo {
+        font-size: 28px;
+    }
+
+    .banner-tag {
+        font-size: 10px;
+        letter-spacing: 1px;
+        padding: 8px 12px;
+    }
+
+    .banner-content {
+        padding: 25px 0;
+    }
+
+    .banner-content h1 {
+        font-size: 30px;
+        letter-spacing: -1px;
+    }
+
+    .banner-content p {
+        font-size: 14px;
+    }
+
+    .banner-features {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .banner-features span {
+        padding: 8px 12px;
+    }
+
+    .banner-footer {
+        font-size: 11px;
+    }
+
+    .login-panel {
+        padding: 25px 18px;
+    }
+
+    .login-card h2 {
+        font-size: 26px;
+    }
+
+    .login-subtitle {
+        font-size: 14px;
+    }
+
+    .login-field {
+        margin-bottom: 18px;
+    }
+
+    .login-field label {
+        font-size: 13px;
+    }
+
+    .login-field ::deep .login-input {
+        font-size: 16px;
+        height: 50px;
+    }
+
+    .login-submit {
+        min-height: 50px;
+        font-size: 15px;
+    }
+
+    .login-divider {
+        margin-top: 25px;
+        margin-bottom: 20px;
+    }
+
+    .login-footer {
+        font-size: 12px;
+    }
+
+    .login-error {
+        font-size: 13px;
+        padding: 12px;
+    }
+
+    .login-success {
+        font-size: 13px;
+        padding: 12px;
+    }
+}
+
+/* Accessibility: reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .login-card {
+        animation: none;
+    }
+
+    .login-submit {
+        transition: none;
+    }
+
+    .login-submit:hover:not(:disabled) {
+        transform: none;
+    }
+
+    .login-field ::deep .login-input {
+        transition: none;
+    }
+
+    .back-home {
+        transition: none;
+    }
+
+    .banner-features span {
+        transition: none;
+    }
+
+    .login-footer a {
+        transition: none;
+    }
+}
+/* Prevent login content overlapping the navigation bar */
+
+.login-page {
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+}

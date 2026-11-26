@@ -1,5 +1,7 @@
-﻿@using Microsoft.AspNetCore.Authorization
+﻿
+@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "CUSTOMER")]
+
 @page "/book-car/{VehicleId:long}"
 @rendermode InteractiveServer
 
@@ -17,7 +19,9 @@
 }
 else if (errorMessage != "")
 {
-    <p class="text-danger">@errorMessage</p>
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
 }
 else if (car != null)
 {
@@ -37,8 +41,8 @@ else if (car != null)
         <input type="datetime-local"
                class="form-control"
                min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")"
-               @bind="reservation.PickupDate" 
-               @bind:after="ResetEstimate"/>
+               @bind="reservation.PickupDate"
+               @bind:after="ResetEstimate" />
     </div>
 
     <div class="mb-3">
@@ -46,7 +50,7 @@ else if (car != null)
         <input type="datetime-local"
                class="form-control"
                min="@reservation.PickupDate.ToString("yyyy-MM-ddTHH:mm")"
-               @bind="reservation.ReturnDate" 
+               @bind="reservation.ReturnDate"
                @bind:after="ResetEstimate" />
     </div>
 
@@ -66,19 +70,23 @@ else if (car != null)
         Continue
     </button>
 
-    <p class="mt-3">@message</p>
+    @if (!string.IsNullOrWhiteSpace(message))
+    {
+        <div class="@messageClass mt-3">
+            @message
+        </div>
+    }
 }
 
 @code {
     [Parameter]
     public long VehicleId { get; set; }
-    
+
     [SupplyParameterFromQuery(Name = "pickup")]
     public DateTime? SearchPickup { get; set; }
 
     [SupplyParameterFromQuery(Name = "returnDate")]
     public DateTime? SearchReturn { get; set; }
-
 
     private Car? car;
     private CreateReservationRequest reservation = new();
@@ -86,31 +94,31 @@ else if (car != null)
     private bool loading = true;
     private string errorMessage = "";
     private string message = "";
+    private string messageClass = "";
 
     private int rentalDays;
     private decimal estimatedPrice;
-    
-    
+
     private void ResetEstimate()
     {
         estimatedPrice = 0;
         rentalDays = 0;
         message = "";
+        messageClass = "";
     }
 
     protected override async Task OnParametersSetAsync()
     {
         reservation.VehicleId = VehicleId;
-        
-        estimatedPrice = 0;
-        rentalDays = 0;
-        message = "";
-        
+
+        ResetEstimate();
+
         reservation.PickupDate = SearchPickup ?? default;
         reservation.ReturnDate = SearchReturn ?? default;
 
         loading = true;
         errorMessage = "";
+        car = null;
 
         try
         {
@@ -118,12 +126,13 @@ else if (car != null)
 
             if (car == null)
             {
-                errorMessage = "Vehicle not found.";
+                errorMessage =
+                    "The selected vehicle could not be found.";
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            errorMessage = "Could not load vehicle details.";
+            errorMessage = GetFriendlyError(ex);
         }
         finally
         {
@@ -131,29 +140,70 @@ else if (car != null)
         }
     }
 
+    private string GetFriendlyError(Exception ex)
+    {
+        if (ex.Message ==
+            "Unable to connect to the service. Please try again later." ||
+            ex.Message ==
+            "The request timed out. Please try again.")
+        {
+            return ex.Message;
+        }
+
+        foreach (System.Net.HttpStatusCode code in
+                 Enum.GetValues<System.Net.HttpStatusCode>())
+        {
+            if (ex.Message == ApiErrorHelper.GetErrorMessage(code))
+            {
+                return ex.Message;
+            }
+        }
+
+        return "Unable to load vehicle details. Please try again later.";
+    }
+
+    private void ShowValidationError(string error)
+    {
+        message = error;
+        messageClass = "alert alert-danger";
+    }
+
     private void HandleBooking()
     {
-        message = "";
-        estimatedPrice = 0;
-        rentalDays = 0;
+        ResetEstimate();
 
-        if (reservation.PickupDate == default ||
-            reservation.ReturnDate == default)
+        if (reservation.PickupDate == default)
         {
-            message = "Please select pickup and return dates.";
+            ShowValidationError(
+                "Please select a pickup date and time.");
             return;
         }
 
-        if (reservation.PickupDate <= DateTime.Now ||
-            reservation.ReturnDate <= reservation.PickupDate)
+        if (reservation.ReturnDate == default)
         {
-            message = "Invalid selected date.";
+            ShowValidationError(
+                "Please select a return date and time.");
+            return;
+        }
+
+        if (reservation.PickupDate <= DateTime.Now)
+        {
+            ShowValidationError(
+                "Pickup date and time must be in the future.");
+            return;
+        }
+
+        if (reservation.ReturnDate <= reservation.PickupDate)
+        {
+            ShowValidationError(
+                "Return date and time must be after the pickup date and time.");
             return;
         }
 
         if (car == null)
         {
-            message = "Vehicle information is unavailable.";
+            ShowValidationError(
+                "Vehicle information is unavailable. Please try again.");
             return;
         }
 
@@ -164,6 +214,9 @@ else if (car != null)
 
         estimatedPrice = rentalDays * car.PricePerDay;
 
-        message = "Reservation details validated. Booking is not connected yet.";
+        message =
+            "Reservation details validated. Booking is not connected yet.";
+
+        messageClass = "alert alert-info";
     }
 }

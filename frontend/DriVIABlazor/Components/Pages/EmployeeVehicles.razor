@@ -1,3 +1,4 @@
+
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "EMPLOYEE")]
 
@@ -357,6 +358,28 @@
         }
     }
 
+    private string GetFriendlyError(Exception ex, string fallback)
+    {
+        if (ex.Message ==
+            "Unable to connect to the service. Please try again later." ||
+            ex.Message ==
+            "The request timed out. Please try again.")
+        {
+            return ex.Message;
+        }
+
+        foreach (System.Net.HttpStatusCode code in
+                 Enum.GetValues<System.Net.HttpStatusCode>())
+        {
+            if (ex.Message == ApiErrorHelper.GetErrorMessage(code))
+            {
+                return ex.Message;
+            }
+        }
+
+        return fallback;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         AuthenticationState authState =
@@ -376,12 +399,16 @@
         {
             cars = await CarApiService.GetAllCarsAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            errorMessage = "Could not load vehicles from the backend.";
+            errorMessage = GetFriendlyError(
+                ex,
+                "Unable to load vehicles. Please try again later.");
         }
-
-        isLoading = false;
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void OpenAddForm()
@@ -440,19 +467,19 @@
         validationMessage = "";
         formValid = false;
 
-        if (registrationNo.Trim() == "")
+        if (string.IsNullOrWhiteSpace(registrationNo))
         {
             validationMessage = "Registration number is required.";
             return;
         }
 
-        if (model.Trim() == "")
+        if (string.IsNullOrWhiteSpace(model))
         {
             validationMessage = "Vehicle model is required.";
             return;
         }
 
-        if (category.Trim() == "")
+        if (string.IsNullOrWhiteSpace(category))
         {
             validationMessage = "Vehicle category is required.";
             return;
@@ -557,15 +584,16 @@
             else
             {
                 actionMessage =
-                    "Could not save vehicle. Please check the backend API.";
+                    "Unable to save the vehicle. Please try again.";
 
                 actionMessageClass = "error-message";
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            actionMessage =
-                "Could not connect to the Vehicle Management API.";
+            actionMessage = GetFriendlyError(
+                ex,
+                "Unable to save the vehicle. Please try again later.");
 
             actionMessageClass = "error-message";
         }
@@ -602,15 +630,16 @@
             else
             {
                 actionMessage =
-                    "Could not delete vehicle. Please check the backend API.";
+                    "Unable to delete the vehicle. Please try again.";
 
                 actionMessageClass = "error-message";
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            actionMessage =
-                "Could not connect to the Vehicle Management API.";
+            actionMessage = GetFriendlyError(
+                ex,
+                "Unable to delete the vehicle. Please try again later.");
 
             actionMessageClass = "error-message";
         }
@@ -627,9 +656,11 @@
             cars = await CarApiService.GetAllCarsAsync();
             errorMessage = "";
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            errorMessage = "Could not refresh the vehicle list.";
+            errorMessage = GetFriendlyError(
+                ex,
+                "Unable to refresh the vehicle list. Please try again later.");
         }
     }
 
@@ -646,4 +677,3 @@
         carToDelete = null;
     }
 }
-

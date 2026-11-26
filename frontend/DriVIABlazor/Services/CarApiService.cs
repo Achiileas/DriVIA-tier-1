@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿
+using System.Net.Http.Json;
 using DriVIABlazor.Models;
 
 namespace DriVIABlazor.Services;
@@ -12,42 +13,80 @@ public class CarApiService
         this.httpClient = httpClient;
     }
 
+    private async Task<HttpResponseMessage> ExecuteRequestAsync(
+        Func<Task<HttpResponseMessage>> request)
+    {
+        HttpResponseMessage response;
+
+        try
+        {
+            response = await request();
+        }
+        catch (HttpRequestException)
+        {
+            throw new Exception(
+                "Unable to connect to the service. Please try again later.");
+        }
+        catch (TaskCanceledException)
+        {
+            throw new Exception(
+                "The request timed out. Please try again.");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            string message =
+                ApiErrorHelper.GetErrorMessage(response.StatusCode);
+
+            response.Dispose();
+            throw new Exception(message);
+        }
+
+        return response;
+    }
+
     public async Task<List<Car>> GetAllCarsAsync()
     {
-        List<Car>? cars =
-            await httpClient.GetFromJsonAsync<List<Car>>("api/vehicles");
-        
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.GetAsync("api/vehicles"));
+
+        var cars =
+            await response.Content.ReadFromJsonAsync<List<Car>>();
+
         return cars ?? new List<Car>();
     }
+
     public async Task<bool> AddCarAsync(Car car)
     {
-        HttpResponseMessage response =
-            await httpClient.PostAsJsonAsync("api/cars", car);
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.PostAsJsonAsync("api/vehicles", car));
 
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> UpdateCarAsync(Car car)
     {
-        HttpResponseMessage response =
-            await httpClient.PutAsJsonAsync(
-                $"api/cars/{car.Id}", car);
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.PutAsJsonAsync(
+                $"api/vehicles/{car.Id}", car));
 
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> DeleteCarAsync(long carId)
     {
-        HttpResponseMessage response =
-            await httpClient.DeleteAsync($"api/cars/{carId}");
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.DeleteAsync($"api/vehicles/{carId}"));
 
         return response.IsSuccessStatusCode;
     }
-    
+
     public async Task<Car?> GetCarByIdAsync(long id)
     {
-        return await httpClient.GetFromJsonAsync<Car>(
-            $"api/vehicles/{id}");
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.GetAsync($"api/vehicles/{id}"));
+
+        return await response.Content.ReadFromJsonAsync<Car>();
     }
 
     public async Task<List<Car>> GetAvailableCarsAsync(
@@ -60,11 +99,12 @@ public class CarApiService
                      $"&pickupDate={pickupDate:yyyy-MM-ddTHH:mm:ss}" +
                      $"&returnDate={returnDate:yyyy-MM-ddTHH:mm:ss}";
 
-        List<Car>? cars =
-            await httpClient.GetFromJsonAsync<List<Car>>(url);
+        using var response = await ExecuteRequestAsync(
+            () => httpClient.GetAsync(url));
+
+        var cars =
+            await response.Content.ReadFromJsonAsync<List<Car>>();
 
         return cars ?? new List<Car>();
     }
-    
 }
-
