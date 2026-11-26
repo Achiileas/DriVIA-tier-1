@@ -1,5 +1,4 @@
-﻿
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using DriVIABlazor.Models;
 
 namespace DriVIABlazor.Services;

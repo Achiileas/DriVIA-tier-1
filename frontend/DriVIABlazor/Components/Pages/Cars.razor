@@ -1,37 +1,13 @@
-
 @page "/cars"
 @rendermode InteractiveServer
 
 @using DriVIABlazor.Models
 @using DriVIABlazor.Services
 @inject CarApiService CarApiService
-@inject LocationApiService LocationApiService
-@inject NavigationManager Navigation
-
 
 <h3>Browse Cars</h3>
 
-
 <p>Search for cars at DriVIA Car Rental</p>
-
-
-@if (SearchPickup.HasValue && SearchReturn.HasValue)
-{
-    <div class="alert alert-info">
-        <strong>Selected rental period</strong>
-
-        <p>
-            Pickup:
-            @SearchPickup.Value.ToString("dd MMM yyyy HH:mm")
-        </p>
-
-        <p>
-            Return:
-            @SearchReturn.Value.ToString("dd MMM yyyy HH:mm")
-        </p>
-    </div>
-}
-
 
 <div class="mb-3">
     <label class="form-label">Model</label>
@@ -39,7 +15,6 @@
            placeholder="Enter car model"
            @bind="searchModel" />
 </div>
-
 
 <div class="mb-3">
     <label class="form-label">Category</label>
@@ -51,7 +26,6 @@
         }
     </select>
 </div>
-
 
 <div class="mb-3">
     <label class="form-label">Maximum Price (DKK/day)</label>
@@ -89,13 +63,10 @@
         Search
     </button>
 
-    
-<button class="btn btn-secondary" @onclick="ClearSearch">
-    Clear Filters
-</button>
-
+    <button class="btn btn-secondary" @onclick="ClearSearch">
+        Clear
+    </button>
 </div>
-
 
 @if (loading)
 {
@@ -107,22 +78,8 @@ else if (errorMessage != null)
 }
 else if (filteredCars.Count == 0)
 {
-    @if (cars.Count == 0 &&
-         SearchPickup.HasValue &&
-         SearchReturn.HasValue &&
-         !string.IsNullOrWhiteSpace(SearchLocation))
-    {
-        <p>
-            No cars are available at the selected location
-            for this rental period. Please try different dates.
-        </p>
-    }
-    else
-    {
-        <p>No cars found matching your search.</p>
-    }
+    <p>No cars found.</p>
 }
-
 else
 {
     <table class="table">
@@ -134,13 +91,11 @@ else
                 <th>Price (DKK/day)</th>
                 <th>Location</th>
                 <th>Gearbox</th>
-                <th>Booking</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var car in filteredCars)
             {
-                
                 <tr>
                     <td>@car.Id</td>
                     <td>@car.Model</td>
@@ -148,29 +103,13 @@ else
                     <td>@car.Price</td>
                     <td>@car.Location</td>
                     <td>@car.Gearbox</td>
-                    <td>
-                        <button class="btn btn-primary"
-                                @onclick="() => BookCar(car.Id)">
-                            Book Now
-                        </button>
-                    </td>
                 </tr>
             }
         </tbody>
     </table>
 }
 
-
 @code {
-    [SupplyParameterFromQuery(Name = "location")]
-    public string? SearchLocation { get; set; }
-
-    [SupplyParameterFromQuery(Name = "pickup")]
-    public DateTime? SearchPickup { get; set; }
-
-    [SupplyParameterFromQuery(Name = "returnDate")]
-    public DateTime? SearchReturn { get; set; }
-
     private List<Car> cars = new();
     private List<Car> filteredCars = new();
 
@@ -180,113 +119,24 @@ else
     private string selectedLocation = "";
     private string selectedGearbox = "";
 
-    
     private bool loading = true;
     private string? errorMessage;
 
-    
-    
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        loading = true;
-        errorMessage = null;
-
         try
         {
-            if (!string.IsNullOrWhiteSpace(SearchLocation) &&
-                SearchPickup.HasValue &&
-                SearchReturn.HasValue)
-            {
-                selectedLocation = SearchLocation;
-
-                if (SearchPickup.Value <= DateTime.Now ||
-                    SearchReturn.Value <= SearchPickup.Value)
-                {
-                    errorMessage =
-                        "Please select a future pickup date and a return date after the pickup date.";
-
-                    cars = new List<Car>();
-                    filteredCars = new List<Car>();
-                    return;
-                }
-
-                List<Location> locations =
-                    await LocationApiService.GetAllLocationsAsync();
-
-                Location? selected =
-                    locations.FirstOrDefault(location =>
-                        location.Name.Equals(
-                            SearchLocation.Trim(),
-                            StringComparison.OrdinalIgnoreCase));
-
-                
-                
-                if (selected == null)
-                {
-                    errorMessage =
-                        "The selected location was not found.";
-
-                    cars = new List<Car>();
-                    filteredCars = new List<Car>();
-                    return;
-                }
-
-                
-cars = await CarApiService.GetAvailableCarsAsync(
-    selected.Id,
-    SearchPickup.Value,
-    SearchReturn.Value);
-
-            }
-            else
-            {
-                selectedLocation = "";
-                cars = await CarApiService.GetAllCarsAsync();
-            }
-
+            cars = await CarApiService.GetAllCarsAsync();
             filteredCars = cars.ToList();
         }
-        
-        catch (Exception ex)
+        catch (Exception)
         {
-            
-            errorMessage = GetFriendlyError(ex);
-            cars = new List<Car>();
-            filteredCars = new List<Car>();
+            errorMessage = "Could not load cars from the backend.";
         }
-        
         finally
         {
-            
             loading = false;
         }
-    }
-
-    private string GetFriendlyError(Exception ex)
-    {
-        if (ex.Message ==
-            "Unable to connect to the service. Please try again later." ||
-            ex.Message ==
-            "The request timed out. Please try again.")
-        {
-            
-            return ex.Message;
-        }
-        
-
-        foreach (System.Net.HttpStatusCode code in
-                 Enum.GetValues<System.Net.HttpStatusCode>())
-        {
-            if (ex.Message == ApiErrorHelper.GetErrorMessage(code))
-            {
-                
-                return ex.Message;
-            }
-            
-        }
-        
-
-        return "Unable to load cars. Please try again later.";
     }
 
     private void SearchCars()
@@ -303,40 +153,21 @@ cars = await CarApiService.GetAvailableCarsAsync(
              car.Price <= maximumPrice.Value) &&
 
             (selectedLocation == "" ||
-             car.Location.Equals(
-                 selectedLocation,
-                 StringComparison.OrdinalIgnoreCase)) &&
+             car.Location == selectedLocation) &&
 
             (selectedGearbox == "" ||
              car.Gearbox == selectedGearbox)
         ).ToList();
     }
 
-
-private void ClearSearch()
-{
-    searchModel = "";
-    selectedCategory = "";
-    maximumPrice = null;
-    selectedLocation = SearchLocation ?? "";
-    selectedGearbox = "";
-
-
-    filteredCars = cars.ToList();
-}
-
-
-
-    private void BookCar(long vehicleId)
+    private void ClearSearch()
     {
-        string url = $"/book-car/{vehicleId}";
+        searchModel = "";
+        selectedCategory = "";
+        maximumPrice = null;
+        selectedLocation = "";
+        selectedGearbox = "";
 
-        if (SearchPickup.HasValue && SearchReturn.HasValue)
-        {
-            url += $"?pickup={SearchPickup.Value:yyyy-MM-ddTHH:mm}" +
-                   $"&returnDate={SearchReturn.Value:yyyy-MM-ddTHH:mm}";
-        }
-
-        Navigation.NavigateTo(url);
+        filteredCars = cars.ToList();
     }
 }
